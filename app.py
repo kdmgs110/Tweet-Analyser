@@ -32,6 +32,11 @@ def index():
 def queryList():
     return render_template('queryList.html', queryList = getAllQuery())
 
+@app.route('/show/<id>')
+def showQuery(id):
+    return render_template('query.html')
+
+
 @app.route('/like/<id>/')
 def likeTweets(id):
     query = getQueryFromQueryId(id)
