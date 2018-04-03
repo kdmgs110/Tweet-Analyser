@@ -6,10 +6,10 @@ from contextlib import closing    # ここはオフィシャルにはなかっ�
 import sqlite3
 
 # 各種ツイッターのキーをセット
-CONSUMER_KEY = 'Q64mcQPs8GESlIdq1YWSshYQT'
-CONSUMER_SECRET = 'Hj4vkGQhANkIOIf0uWF1AXJhRD7MBcfcxLwqpSOz2tcfgMhFrO'
-ACCESS_TOKEN = ' 948072603427618816-736zQfX1FUxJbYnPyEQyQTpUWoXkLjA'
-ACCESS_SECRET = '948072603427618816-736zQfX1FUxJbYnPyEQyQTpUWoXkLjA'
+CONSUMER_KEY = ''
+CONSUMER_SECRET = ''
+ACCESS_TOKEN = ''
+ACCESS_SECRET = ''
 
 # データベースの接続、なければ作成
 DATABASE = "db/database.db"
