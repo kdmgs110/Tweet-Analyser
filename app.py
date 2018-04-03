@@ -41,7 +41,7 @@ def showQuery(id):
 def likeTweets(id):
     query = getQueryFromQueryId(id)
     #flash("10件のツイートをいいねしました", 'info')
-    return redirect("/index")
+    return redirect("/show/{}".format(id))
 
 @app.route('/delete/<id>/')
 def deleteQuery(id):
