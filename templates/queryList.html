@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<h1>キーワード一覧</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>キーワード</th>
+            <th>アクション</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in queryList %}
+        <tr>
+            <th>{{row[0]}}</th>
+            <td>{{row[1]}}</td>
+            <td>
+              <a class="btn btn-info" href = "/like/{{ row[0] }}">いいねする</a>
+              <a class = "btn btn-success" href = "like/history/{{ row[0] }}">いいね履歴を見る</a>
+              <a class = "btn btn-danger" href = "delete/{{ row[0] }}">キーワードを削除する</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<h1>キーワードの新規登録</h1>
+<form action="/addQuery" method="post">
+  <div class="form-group">
+    <label for="query">検索キーワード</label>
+    <input type="text" class="form-control" id="query" name="query" placeholder="ここにキーワードを入力">
+    <label for="cron">CRONTAB</label>
+    <input type="text" class="form-control" id="query" name="cron" placeholder="ここにCRONTABを入力">
+  </div>
+  <button type="submit" class="btn btn-default">登録する</button>
+</form>
+{% endblock %}

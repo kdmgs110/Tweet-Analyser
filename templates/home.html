@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="jumbotron">
+  <h1 class="display-3">Twitter Analyser</h1>
+  <p class="lead">ツイッター上のデータを検索語句を指定してCSVに保存できるアプリです</p>
+  <hr class="my-4">
+  <p>検索キーワードを入力して、実行すると、ツイートを取得してCSV化できます</p>
+</div>
+
+<form action="/" method="post">
+  <div class="form-group">
+    <label for="text">検索キーワード</label>
+    <input type="text" class="form-control" id="query" name="query" placeholder="query">
+  </div>
+  <button type="submit" class="btn btn-default">データを取得</button>
+</form>
+{% endblock %}
