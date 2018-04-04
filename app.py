@@ -10,13 +10,20 @@ CONSUMER_KEY = ''
 CONSUMER_SECRET = ''
 ACCESS_TOKEN = ''
 ACCESS_SECRET = ''
+auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
+#APIインスタンスを作成
+api = tweepy.API(auth)
 
 # データベースの接続、なければ作成
 DATABASE = "db/database.db"
 conn = sqlite3.connect(DATABASE)
 c = conn.cursor()
-create_query_db_sql = """CREATE TABLE IF NOT EXISTS query(id integer PRIMARY KEY,query text)"""
+create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY,query text)"
+create_like_history_sql = "CREATE TABLE IF NOT EXISTS like_history (id integer PRIMARY KEY, query_id integer, created_at TIMESTAMP, user_id text, user_name text, tweet_id text, content text)"
+
 c.execute(create_query_db_sql)
+c.execute(create_like_history_sql)
 conn.close()
 
 # Flask の起動
@@ -38,8 +45,10 @@ def showQuery(id):
 
 
 @app.route('/like/<id>/')
-def likeTweets(id):
+def like(id):
     query = getQueryFromQueryId(id)
+    tweets = searchTweets(query)
+    likeTweets(tweets)
     #flash("10件のツイートをいいねしました", 'info')
     return redirect("/show/{}".format(id))
 
@@ -139,6 +148,33 @@ def deleteQueryFromQueryId(id):
     c.execute(deleteQuerySQL,[id])
     conn.commit()
     c.close()
+
+def insertLikeRecord(id, keyword_id, created_at, user_id, user_name, tweet_id, content):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    insertSQL = "INSERT INTO "
+    c.execute(insertSQL,[id])
+    conn.commit()
+    c.close()
+
+# Tweepyの関数群
+def likeTweets(tweets):
+    for tweet in tweets:
+        #DB:ID KEYWORD_ID CREATED_AT USER_ID USER_NAME TWEET_ID CONTENT
+        user_id = tweet.user._json['screen_name']
+        user_name = tweet.user.name
+        tweet_id = tweet.id
+        content = tweet.text
+        try:
+            api.create_favorite(user_id) #いいねする
+            insertLikeRecord() #結果をDBに保存する
+        except Exception as e:
+            print ("ERROR: スキップしました: " + e)
+
+
+def searchTweets(query):
+    tweets = api.search(q=query, count=100)
+    return tweets
 
 
 if __name__ == '__main__':
