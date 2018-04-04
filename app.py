@@ -4,12 +4,20 @@ from datetime import datetime
 from flask import Flask, render_template, request, logging, Response, redirect, flash
 from contextlib import closing    # ここはオフィシャルにはなかったが必要だった
 import sqlite3
+from config import CONFIG
+from logging import getLogger
+
+#ログ設定
+logger = getLogger(__name__)
+
 
 # 各種ツイッターのキーをセット
-CONSUMER_KEY = ''
-CONSUMER_SECRET = ''
-ACCESS_TOKEN = ''
-ACCESS_SECRET = ''
+CONSUMER_KEY = CONFIG["CONSUMER_KEY"]
+CONSUMER_SECRET = CONFIG["CONSUMER_SECRET"]
+ACCESS_TOKEN = CONFIG["ACCESS_TOKEN"]
+ACCESS_SECRET = CONFIG["ACCESS_SECRET"]
+
+#Tweepy
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 #APIインスタンスを作成
@@ -41,14 +49,17 @@ def queryList():
 
 @app.route('/show/<id>')
 def showQuery(id):
-    return render_template('query.html')
+    queryList = getQueryById(id)
+    query = getQueryFromQueryId(id)
+    return render_template('query.html', queryList = queryList, query = query)
 
 
 @app.route('/like/<id>/')
 def like(id):
     query = getQueryFromQueryId(id)
+    print(query[0])
     tweets = searchTweets(query)
-    likeTweets(tweets)
+    likeTweets(tweets, id)
     #flash("10件のツイートをいいねしました", 'info')
     return redirect("/show/{}".format(id))
 
@@ -134,12 +145,20 @@ def getAllQuery():
     res = c.execute(selectAllSQL)
     return res
 
+def getQueryById(id):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    selectAllSQL = "SELECT * FROM like_history WHERE query_id = ? ORDER BY id DESC"
+    res = c.execute(selectAllSQL,[id])
+    return res
+
+
 def getQueryFromQueryId(id):
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
     selectIdSQL = "SELECT query FROM query WHERE id = ?"
-    res = c.execute(selectIdSQL,[id])
-    return res
+    c.execute(selectIdSQL,[id])
+    return c.fetchone()
 
 def deleteQueryFromQueryId(id):
     conn = sqlite3.connect(DATABASE)
@@ -149,33 +168,47 @@ def deleteQueryFromQueryId(id):
     conn.commit()
     c.close()
 
-def insertLikeRecord(id, keyword_id, created_at, user_id, user_name, tweet_id, content):
+def insertLikeRecord(keyword_id, created_at, user_id, user_name, tweet_id, content, is_follower):
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    insertSQL = "INSERT INTO "
-    c.execute(insertSQL,[id])
+    insertSQL = "INSERT INTO like_history (query_id, created_at, user_id, user_name, tweet_id, content, is_follower) VALUES (?,?,?,?,?,?,?)"
+    c.execute(insertSQL, [keyword_id, created_at, user_id, user_name, tweet_id, content, is_follower])
     conn.commit()
     c.close()
 
 # Tweepyの関数群
-def likeTweets(tweets):
+def likeTweets(tweets, keyword_id):
+    followers_ids = getFollowers_Ids()
+    created_at = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     for tweet in tweets:
-        #DB:ID KEYWORD_ID CREATED_AT USER_ID USER_NAME TWEET_ID CONTENT
+        #DB:ID KEYWORD_ID CREATED_AT USER_ID USER_NAME TWEET_ID CONTENT IS_FOLLOWER
         user_id = tweet.user._json['screen_name']
         user_name = tweet.user.name
         tweet_id = tweet.id
         content = tweet.text
+        is_follower = 1 if user_id in followers_ids else 0 #フォロワーのユーザー名の中にそのユーザーが存在すれば1
         try:
-            api.create_favorite(user_id) #いいねする
-            insertLikeRecord() #結果をDBに保存する
+            api.create_favorite(tweet_id) #フォロワーでなければいいねする
+            insertLikeRecord(keyword_id, created_at, user_id, user_name, tweet_id, content, is_follower) #結果をDBに保存する
+            logger.debug("likeレコードを追加しました。user_id:{}".format(user_id))
         except Exception as e:
-            print ("ERROR: スキップしました: " + e)
+             logger.error(e)
 
 
 def searchTweets(query):
     tweets = api.search(q=query, count=100)
     return tweets
 
+def getFollowers_Ids():
+    followers = tweepy.Cursor(api.followers_ids, cursor = -1).items()
+    followers_ids = []
+    try:
+        for followers_id in followers:
+            print(followers_id)
+            followers_ids.append(followers_id)
+    except tweepy.error.TweepError as e:
+        print (e.reason)
+    return followers_ids
 
 if __name__ == '__main__':
     app.run(debug=True) # デバックしたときに、再ロードしなくても大丈夫になる
