@@ -17,6 +17,9 @@ CONSUMER_SECRET = CONFIG["CONSUMER_SECRET"]
 ACCESS_TOKEN = CONFIG["ACCESS_TOKEN"]
 ACCESS_SECRET = CONFIG["ACCESS_SECRET"]
 
+#FLASKのキーの設定
+SECRET_KEY = CONFIG["SECRET_KEY"]
+
 #Tweepy
 auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
@@ -51,7 +54,8 @@ def queryList():
 def showQuery(id):
     queryList = getQueryById(id)
     query = getQueryFromQueryId(id)
-    return render_template('query.html', queryList = queryList, query = query)
+    stats = getStats()
+    return render_template('query.html', queryList = queryList, query = query, stats = stats)
 
 
 @app.route('/like/<id>/')
@@ -59,8 +63,8 @@ def like(id):
     query = getQueryFromQueryId(id)
     print(query[0])
     tweets = searchTweets(query)
-    likeTweets(tweets, id)
-    #flash("10件のツイートをいいねしました", 'info')
+    like_count = likeTweets(tweets, id)
+    flash("{}件のツイートをいいねしました".format(like_count))
     return redirect("/show/{}".format(id))
 
 @app.route('/delete/<id>/')
@@ -145,6 +149,16 @@ def getAllQuery():
     res = c.execute(selectAllSQL)
     return res
 
+def getUserIds(query_id):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    query_id = getQueryById
+    selectAllSQL = "SELECT user_id FROM like_history WHERE query_id = ?"
+    res = c.execute(selectAllSQL, [query_id])
+    user_ids = list(res.fetchall())
+    return user_ids
+
+
 def getQueryById(id):
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
@@ -178,6 +192,7 @@ def insertLikeRecord(keyword_id, created_at, user_id, user_name, tweet_id, conte
 
 # Tweepyの関数群
 def likeTweets(tweets, keyword_id):
+    like_count = 0
     followers_ids = getFollowers_Ids()
     created_at = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     for tweet in tweets:
@@ -191,8 +206,11 @@ def likeTweets(tweets, keyword_id):
             api.create_favorite(tweet_id) #フォロワーでなければいいねする
             insertLikeRecord(keyword_id, created_at, user_id, user_name, tweet_id, content, is_follower) #結果をDBに保存する
             logger.debug("likeレコードを追加しました。user_id:{}".format(user_id))
+            like_count += 1
+            logger.debug("いいね数: {}".format(like_count))
         except Exception as e:
              logger.error(e)
+    return like_count
 
 
 def searchTweets(query):
@@ -210,5 +228,28 @@ def getFollowers_Ids():
         print (e.reason)
     return followers_ids
 
+def getFollowersScreenNames():
+    follower_screen_names = []
+    for follower in api.followers_ids():
+        follower_screen_names.append(api.get_user(follower).screen_name)
+    print("{}名のフォロワー数を取得しました".format(len(follower_screen_names)))
+    return follower_screen_names
+
+def getQueryStats(query_id):
+    #フォロワーのツイッター名がいいねしたユーザーの中に含まれている数を出す
+    liked_user_ids = getLikedUserIds(query) #いいねしたユーザーIDを取り出す
+    follower_user_ids = getFolloweUserIds() #フォロワーのユーザーIDを取り出す
+    follow_back_user_ids = [] #いいねしていてかつフォロワーのユーザーIDを取り出す
+    for liked_user_id in liked_user_ids:
+        if liked_user_id in follower_user_ids:
+            follow_back_user_ids.append(liked_user_id)
+
+    res = {
+        "liked_count": liked_user_ids,
+        "follow_backs": follow_back_user_ids
+    }
+    return res
+
 if __name__ == '__main__':
+    app.secret_key = SECRET_KEY
     app.run(debug=True) # デバックしたときに、再ロードしなくても大丈夫になる
