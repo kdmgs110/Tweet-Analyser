@@ -20,7 +20,7 @@ DATABASE = "db/database.db"
 conn = sqlite3.connect(DATABASE)
 c = conn.cursor()
 create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY,query text)"
-create_like_history_sql = "CREATE TABLE IF NOT EXISTS like_history (id integer PRIMARY KEY, query_id integer, created_at TIMESTAMP, user_id text, user_name text, tweet_id text, content text)"
+create_like_history_sql = "CREATE TABLE IF NOT EXISTS like_history (id integer PRIMARY KEY, query_id integer, created_at TIMESTAMP, user_id text, user_name text, tweet_id text, content text, is_follower int)"
 
 c.execute(create_query_db_sql)
 c.execute(create_like_history_sql)
