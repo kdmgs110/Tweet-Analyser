@@ -2,6 +2,25 @@
 
 {% block body %}
 
+<h1>「{{query[0]}}」の統計情報 </h1>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>いいねしたユーザー数</th>
+      <th>フォローバック数</th>
+      <th>フォローバック率</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>120</td>
+      <td>20</td>
+      <td>20%</td>
+    </tr>
+  </tbody>
+</table>
+
 <h1>「{{query[0]}}」でいいねしたツイート一覧</h1>
 
 <table class="table">
@@ -20,7 +39,7 @@
         <tr>
             <th>{{row[2]}}</th>
             <td>{{row[3]}}</td>
-            <th>{{row[4]}}</th>
+            <td>{{row[4]}}</td>
             <td>{{row[5]}}</td>
             <td>{{row[6]}}</td>
             <td>{{row[7]}}</td>
