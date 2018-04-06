@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<h1>あなたのプロフィールデータ</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>現在のフォロー数</th>
+            <th>現在のフォロー数</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>200 <a href="/followings">フォロー中のユーザー一覧を見る</a></td>
+            <td>2700 <a href= "/followers">フォロワーのユーザー一覧を見る</td>
+        </tr>
+    </tbody>
+</table>
+
+<span class="pull-right">
+  <a class="btn btn-success" href="/update">フォロワー・フォロー数を更新する</a>
+</span>
+
+<h1></h1>
+
+{% endblock %}
