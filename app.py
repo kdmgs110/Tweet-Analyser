@@ -199,7 +199,7 @@ def getLikedUserIds(query_id):
 def getUserName(user_id):
     user = api.get_user(783214)
     user_name = user.screen_name
-    return username
+    return user_name
 
 def getQueryById(id):
     conn = sqlite3.connect(DATABASE)
@@ -309,14 +309,15 @@ def exportFollowerCSV(created_at, followers_ids):
     フォロワー数更新時に、フォロワー数の詳細データをCSVにエクスポートします
     user_id,user_name,followings_count,followers_count
     """
-    df = pd.read_csv('csv/default/followers.csv', index_col=0)
+    df = pd.DataFrame(columns=["user_id","user_name","followings_count","followers_count"])
     try:
-        for user_id in follower_ids:
+        for user_id in followers_ids:
             user_name = getUserName(user_id)
+            print (user_name)
             followings_count = getFollowingsCount(user_id)
             followers_count = getFollowersCount(user_id)
             se = pd.Series(
-                [user_id, use_name, followings_count, followers_count],
+                [user_id, user_name, followings_count, followers_count],
                 ["user_id","user_name","followings_count","followers_count"]
                 )
             df = df.append(se, ignore_index=True)
@@ -326,14 +327,20 @@ def exportFollowerCSV(created_at, followers_ids):
 
 
 def getFollowersCount(user_id):
-    user = api.get_user(userID)
-    followersCount = user.followers_count
-    return followersCount
+    try:
+        user = api.get_user(user_id)
+        followersCount = user.followers_count
+        return followersCount
+    except Exception as e:
+        print("[ERROR] フォロワー数の取得に失敗しました:{}".format(e))
 
 def getFollowingsCount(user_id):
-    user = api.get_user(userID)
-    followingCount = user.friends_count
-    return followingCount
+    try:
+        user = api.get_user(user_id)
+        followingCount = user.friends_count
+        return followingCount
+    except Exception as e:
+        print("[ERROR]フォロー数の取得に失敗しました。{}".format(e))
 
 if __name__ == '__main__':
     app.secret_key = SECRET_KEY
