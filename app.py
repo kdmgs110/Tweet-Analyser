@@ -1,11 +1,12 @@
 import tweepy
-import pandas
+import pandas as pd
 from datetime import datetime
 from flask import Flask, render_template, request, logging, Response, redirect, flash
 from contextlib import closing    # ここはオフィシャルにはなかったが必要だった
 import sqlite3
 from config import CONFIG
 from logging import getLogger
+
 
 #ログ設定
 logger = getLogger(__name__)
@@ -119,7 +120,7 @@ def updateFollwers():
 def getData():
 
     #CSVを初期化
-    df = pandas.read_csv('tweet.csv') # tweetedTime query userid username content tweetURL
+    df = pd.read_csv('tweet.csv') # tweetedTime query userid username content tweetURL
 
     #実行時刻
     time = datetime.now().strftime("%Y%m%d%H%M")
@@ -151,7 +152,10 @@ def getData():
         content = result.text
 
         #CSVに行を追加
-        se = pandas.Series([tweetedTime, query, user_id, username, content],['tweetedTime', 'query', 'userid', 'username', 'content']) # 取得したページのURL, 色, サイズと在庫の行を追加し
+        se = pd.Series(
+            [tweetedTime, query, user_id, username, content],
+            ['tweetedTime', 'query', 'userid', 'username', 'content']
+            ) # 取得したページのURL, 色, サイズと在庫の行を追加し
         df = df.append(se, ignore_index=True) # データフレームに追加する
         print(df)
 
@@ -305,13 +309,16 @@ def exportFollowerCSV(created_at, followers_ids):
     フォロワー数更新時に、フォロワー数の詳細データをCSVにエクスポートします
     user_id,user_name,followings_count,followers_count
     """
-    df = pandas.read_csv('../csv/default/followers.csv', index_col=0)
+    df = pd.read_csv('../csv/default/followers.csv', index_col=0)
     try:
         for user_id in follower_ids:
-            user_name = getUserName(user_id):
-            following_count = getFollowingsCount(user_id)
+            user_name = getUserName(user_id)
+            followings_count = getFollowingsCount(user_id)
             followers_count = getFollowersCount(user_id)
-            se = pandas.Series([user_id, use_name followings_count, followers_count],["user_id","user_name","followings_count","followers_count"])
+            se = pd.Series(
+                [user_id, use_name, followings_count, followers_count],
+                ["user_id","user_name","followings_count","followers_count"]
+                )
             df = df.append(se, ignore_index=True)
         df.to_csv("../csv/followers/{}.csv".format(created_at))
     except Exception as e:
