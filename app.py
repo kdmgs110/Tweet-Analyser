@@ -69,8 +69,6 @@ def followers():
 def showQuery(id):
     queryList = getQueryById(id)
     query = getQueryFromQueryId(id)
-    stats = getStats(id)
-    print(stats)
     return render_template('query.html', queryList = queryList, query = query, stats = stats)
 
 
