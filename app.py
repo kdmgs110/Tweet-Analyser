@@ -32,9 +32,11 @@ conn = sqlite3.connect(DATABASE)
 c = conn.cursor()
 create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY,query text)"
 create_like_history_sql = "CREATE TABLE IF NOT EXISTS like_history (id integer PRIMARY KEY, query_id integer, created_at TIMESTAMP, user_id text, user_name text, tweet_id text, content text, is_follower int)"
+create_followers_sql = "CREATE TABLE IF NOT EXISTS followers (id integer PRIMARY KEY, created_at TIMESTAMP, followers_count integer)"
 
 c.execute(create_query_db_sql)
 c.execute(create_like_history_sql)
+c.execute(create_followers_sql)
 conn.close()
 
 # Flask の起動
@@ -42,19 +44,32 @@ app = Flask(__name__)
 
 # Viewの処理
 
+@app.route('/index')
+def queryList():
+    return render_template('queryList.html', queryList = getAllQuery())
+
 @app.route('/')
 def index():
     return render_template('home.html')
 
-@app.route('/index')
-def queryList():
-    return render_template('queryList.html', queryList = getAllQuery())
+@app.route('/you')
+def yourProfile():
+    return render_template('yourProfile.html')
+
+@app.route('/you/followings')
+def followings():
+    return render_template("followings.html")
+
+@app.route('/you/followers')
+def followers():
+    return render_template("followers.html")
 
 @app.route('/show/<id>')
 def showQuery(id):
     queryList = getQueryById(id)
     query = getQueryFromQueryId(id)
-    stats = getStats()
+    stats = getStats(id)
+    print(stats)
     return render_template('query.html', queryList = queryList, query = query, stats = stats)
 
 
@@ -79,8 +94,26 @@ def addQuery():
         cron = request.form['cron']
         insertQuery(query)
         return redirect('/index')
-
     return render_template('addQuery.html')
+
+@app.route("/you/followers/update")
+def updateFollwers():
+    """
+    フォロワー数を更新し、プロフィールページにリダイレクトします
+    """
+    try:
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        followersIds = getFollowers_Ids()
+        created_at = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        insertSQL = "INSERT INTO followers (created_at, followers_count) VALUES (?,?)"
+        c.execute(insertSQL, [created_at, len(followersIds)])
+        csvName = "{}.csv".format(created_at)
+        exportFollowerCSV(csvName, getFollowers_Ids()) #CSVを/csv/followers配下にエクスポート
+    except Exception as e:
+        print(e)
+    return redirect('/you')
+
 
 @app.route('/', methods=['POST'])
 def getData():
@@ -149,15 +182,20 @@ def getAllQuery():
     res = c.execute(selectAllSQL)
     return res
 
-def getUserIds(query_id):
+def getLikedUserIds(query_id):
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    query_id = getQueryById
+
+
     selectAllSQL = "SELECT user_id FROM like_history WHERE query_id = ?"
     res = c.execute(selectAllSQL, [query_id])
     user_ids = list(res.fetchall())
     return user_ids
 
+def getUserName(user_id):
+    user = api.get_user(783214)
+    user_name = user.screen_name
+    return username
 
 def getQueryById(id):
     conn = sqlite3.connect(DATABASE)
@@ -228,27 +266,67 @@ def getFollowers_Ids():
         print (e.reason)
     return followers_ids
 
-def getFollowersScreenNames():
+def getFollowersUserIds():
     follower_screen_names = []
     for follower in api.followers_ids():
         follower_screen_names.append(api.get_user(follower).screen_name)
     print("{}名のフォロワー数を取得しました".format(len(follower_screen_names)))
     return follower_screen_names
 
-def getQueryStats(query_id):
-    #フォロワーのツイッター名がいいねしたユーザーの中に含まれている数を出す
-    liked_user_ids = getLikedUserIds(query) #いいねしたユーザーIDを取り出す
-    follower_user_ids = getFolloweUserIds() #フォロワーのユーザーIDを取り出す
-    follow_back_user_ids = [] #いいねしていてかつフォロワーのユーザーIDを取り出す
-    for liked_user_id in liked_user_ids:
-        if liked_user_id in follower_user_ids:
-            follow_back_user_ids.append(liked_user_id)
+def getStats(query_id):
+    """
+    キーワードIDから、いいねしたユーザーのID・フォローバックしてくれたユーザーのIDを返します。
+    """
+    try:
+        liked_user_ids = getLikedUserIds(query_id) #いいねしたユーザーIDを取り出す
+        print(liked_user_ids)
+        follower_user_ids = getFollowersUserIds() #フォロワーのユーザーIDを取り出す
+        print(follower_user_ids)
+        follow_back_user_ids = [] #いいねしていてかつフォロワーのユーザーIDを取り出す
+        for liked_user_id in liked_user_ids:
+            if liked_user_id in follower_user_ids:
+                print("{} follows back you".format(liked_user_id))
+                follow_back_user_ids.append(liked_user_id)
+        res = {
+            "liked_user_ids": liked_user_ids,
+            "follow_back_user_ids": follow_back_user_ids
+        }
+        return res
+    except Exception as e:
+        print(e)
+        res = {
+            "liked_user_ids": "FAILED",
+            "follow_back_user_ids": "FAILED"
+        }
+        return res
 
-    res = {
-        "liked_count": liked_user_ids,
-        "follow_backs": follow_back_user_ids
-    }
-    return res
+def exportFollowerCSV(created_at, followers_ids):
+    """
+    フォロワー数更新時に、フォロワー数の詳細データをCSVにエクスポートします
+    user_id,user_name,followings_count,followers_count
+    """
+    df = pandas.read_csv('../csv/default/followers.csv', index_col=0)
+    try:
+        for user_id in follower_ids:
+            user_name = getUserName(user_id):
+            following_count = getFollowingsCount(user_id)
+            followers_count = getFollowersCount(user_id)
+            se = pandas.Series([user_id, use_name followings_count, followers_count],["user_id","user_name","followings_count","followers_count"])
+            df = df.append(se, ignore_index=True)
+        df.to_csv("../csv/followers/{}.csv".format(created_at))
+    except Exception as e:
+        print("[ERROR] CSVのエクスポートに失敗しました：{}".format(e))
+
+
+def getFollowersCount(user_id):
+    user = api.get_user(userID)
+    followersCount = user.followers_count
+    return followersCount
+
+def getFollowingsCount(user_id):
+    user = api.get_user(userID)
+    followingCount = user.friends_count
+    return followingCount
 
 if __name__ == '__main__':
     app.secret_key = SECRET_KEY
