@@ -321,7 +321,8 @@ def exportFollowerCSV(created_at, followers_ids):
                 ["user_id","user_name","followings_count","followers_count"]
                 )
             df = df.append(se, ignore_index=True)
-        df.to_csv("../csv/followers/{}.csv".format(created_at))
+            print(df)
+        df.to_csv("../csv/followers/{}".format(created_at))
     except Exception as e:
         print("[ERROR] CSVのエクスポートに失敗しました：{}".format(e))
 
