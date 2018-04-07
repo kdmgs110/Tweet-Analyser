@@ -6,7 +6,7 @@ from contextlib import closing    # ここはオフィシャルにはなかっ�
 import sqlite3
 from config import CONFIG
 from logging import getLogger
-
+import time
 
 #ログ設定
 logger = getLogger(__name__)
@@ -198,7 +198,7 @@ def getLikedUserIds(query_id):
 
 def getUserName(user_id):
     user = api.get_user(783214)
-    user_name = user.screen_name
+    user_name = user.name
     return user_name
 
 def getQueryById(id):
@@ -310,8 +310,8 @@ def exportFollowerCSV(created_at, followers_ids):
     user_id,user_name,followings_count,followers_count
     """
     df = pd.DataFrame(columns=["user_id","user_name","followings_count","followers_count"])
-    try:
-        for user_id in followers_ids:
+    for user_id in followers_ids:
+        try:
             user_name = getUserName(user_id)
             print (user_name)
             followings_count = getFollowingsCount(user_id)
@@ -322,9 +322,12 @@ def exportFollowerCSV(created_at, followers_ids):
                 )
             df = df.append(se, ignore_index=True)
             print(df)
-        df.to_csv("../csv/followers/{}".format(created_at))
-    except Exception as e:
-        print("[ERROR] CSVのエクスポートに失敗しました：{}".format(e))
+        except Exception as e:
+            print("[ERROR] データの取得に失敗しました：{}".format(e))
+            print("[INFO] 15分間待機します")
+            time.sleep(60 * 15)
+            continue
+    df.to_csv("csv/followers/{}".format(created_at))
 
 
 def getFollowersCount(user_id):
