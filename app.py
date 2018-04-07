@@ -69,7 +69,7 @@ def followers():
 def showQuery(id):
     queryList = getQueryById(id)
     query = getQueryFromQueryId(id)
-    return render_template('query.html', queryList = queryList, query = query, stats = stats)
+    return render_template('query.html', queryList = queryList, query = query)
 
 
 @app.route('/like/<id>/')
@@ -245,11 +245,17 @@ def likeTweets(tweets, keyword_id):
         try:
             api.create_favorite(tweet_id) #フォロワーでなければいいねする
             insertLikeRecord(keyword_id, created_at, user_id, user_name, tweet_id, content, is_follower) #結果をDBに保存する
-            logger.debug("likeレコードを追加しました。user_id:{}".format(user_id))
+            print("[INFO]likeレコードを追加しました。user_id:{}".format(user_id))
             like_count += 1
-            logger.debug("いいね数: {}".format(like_count))
+            print("[INFO]いいね数: {}".format(like_count))
         except Exception as e:
-             logger.error(e)
+            print("[ERROR]いいねに失敗しました: {}".format(e))
+            if e.response and e.response.status == 139:
+                print("[INFO] rate limitの上限値を超えたので、15分待機後に実行します。")
+                time.sleep(60*15)
+            if e.response and e.response.status == 139:
+                print("[ERROR] すでにいいねをしているツイートです")
+
     return like_count
 
 
