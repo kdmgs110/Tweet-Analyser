@@ -309,7 +309,7 @@ def exportFollowerCSV(created_at, followers_ids):
     フォロワー数更新時に、フォロワー数の詳細データをCSVにエクスポートします
     user_id,user_name,followings_count,followers_count
     """
-    df = pd.read_csv('../csv/default/followers.csv', index_col=0)
+    df = pd.read_csv('csv/default/followers.csv', index_col=0)
     try:
         for user_id in follower_ids:
             user_name = getUserName(user_id)
