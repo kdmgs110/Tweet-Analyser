@@ -5,7 +5,6 @@ from flask import Flask, render_template, request, logging, Response, redirect, 
 from contextlib import closing    # ここはオフィシャルにはなかったが必要だった
 import sqlite3
 from config import CONFIG
-from logging import getLogger
 import time
 
 #ログ設定
@@ -255,7 +254,6 @@ def likeTweets(tweets, keyword_id):
                 time.sleep(60*15)
             if e.response and e.response.status == 139:
                 print("[ERROR] すでにいいねをしているツイートです")
-
     return like_count
 
 
