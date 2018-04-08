@@ -234,7 +234,7 @@ def insertLikeRecord(keyword_id, created_at, user_id, user_name, tweet_id, conte
 def likeTweets(tweets, keyword_id):
     like_count = 0
     followers_ids = getFollowers_Ids()
-    created_at = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    created_at = datetime.now().strftime("%Y%m%d%H%M%S")
     for tweet in tweets:
         #DB:ID KEYWORD_ID CREATED_AT USER_ID USER_NAME TWEET_ID CONTENT IS_FOLLOWER
         user_id = tweet.user._json['screen_name']
@@ -250,7 +250,7 @@ def likeTweets(tweets, keyword_id):
             print("[INFO]いいね数: {}".format(like_count))
         except Exception as e:
             print("[ERROR]いいねに失敗しました: {}".format(e))
-            if e.response and e.response.status == 139:
+            if e.response and e.response.status == 88:
                 print("[INFO] rate limitの上限値を超えたので、15分待機後に実行します。")
                 time.sleep(60*15)
             if e.response and e.response.status == 139:
