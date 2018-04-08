@@ -7,9 +7,6 @@ import sqlite3
 from config import CONFIG
 import time
 
-#ログ設定
-logger = getLogger(__name__)
-
 
 # 各種ツイッターのキーをセット
 CONSUMER_KEY = CONFIG["CONSUMER_KEY"]
@@ -103,7 +100,7 @@ def updateFollwers():
         conn = sqlite3.connect(DATABASE)
         c = conn.cursor()
         followersIds = getFollowers_Ids()
-        created_at = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        created_at = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         insertSQL = "INSERT INTO followers (created_at, followers_count) VALUES (?,?)"
         c.execute(insertSQL, [created_at, len(followersIds)])
         csvName = "{}.csv".format(created_at)
@@ -249,9 +246,9 @@ def likeTweets(tweets, keyword_id):
             print("[INFO]いいね数: {}".format(like_count))
         except Exception as e:
             print("[ERROR]いいねに失敗しました: {}".format(e))
-            if e.response and e.response.status == 88:
+            if e.response and e.response.status == 429:
                 print("[INFO] rate limitの上限値を超えたので、15分待機後に実行します。")
-                time.sleep(60*15)
+                time.sleep(60 * 15)
             if e.response and e.response.status == 139:
                 print("[ERROR] すでにいいねをしているツイートです")
     return like_count
