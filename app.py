@@ -27,7 +27,7 @@ api = tweepy.API(auth)
 DATABASE = "db/database.db"
 conn = sqlite3.connect(DATABASE)
 c = conn.cursor()
-create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY,query text)"
+create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY, query text, cron_tab text, is_enabled boolean)"
 create_like_history_sql = "CREATE TABLE IF NOT EXISTS like_history (id integer PRIMARY KEY, query_id integer, created_at TIMESTAMP, user_id text, user_name text, tweet_id text, content text, is_follower int)"
 create_followers_sql = "CREATE TABLE IF NOT EXISTS followers (id integer PRIMARY KEY, created_at TIMESTAMP, followers_count integer)"
 
@@ -44,6 +44,11 @@ app = Flask(__name__)
 @app.route('/index')
 def queryList():
     return render_template('queryList.html', queryList = getAllQuery())
+
+@app.route("/edit/<id>")
+def editQuery(id):
+    res = selectQueryById(id)
+    return render_template('editQuery.html', res = res)
 
 @app.route('/')
 def index():
@@ -87,7 +92,7 @@ def addQuery():
     if request.method == 'POST':
         query = request.form['query']
         cron = request.form['cron']
-        insertQuery(query)
+        insertQuery(query, cron)
         return redirect('/index')
     return render_template('addQuery.html')
 
@@ -164,12 +169,20 @@ def getData():
                      "attachment; filename={}".format(csvName)})
 
 # SQL関係のメソッド
-
-def insertQuery(query):
+def selectQueryById(queryId):
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
-    insertSQL = "INSERT INTO query (query) VALUES (?)"
-    c.execute(insertSQL, [query])
+    insertSQL = "SELECT * FROM query WHERE id = ?"
+    res = c.execute(insertSQL, [queryId]).fetchone()
+    c.close()
+    return res
+
+
+def insertQuery(query, crontab):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    insertSQL = "INSERT INTO query (query, cron_tab) VALUES (?, ?)"
+    c.execute(insertSQL, [query, crontab])
     conn.commit()
     c.close()
 
@@ -201,7 +214,6 @@ def getQueryById(id):
     selectAllSQL = "SELECT * FROM like_history WHERE query_id = ? ORDER BY id DESC"
     res = c.execute(selectAllSQL,[id])
     return res
-
 
 def getQueryFromQueryId(id):
     conn = sqlite3.connect(DATABASE)
