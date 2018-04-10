@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 
 def searchTweets(query):
-    tweets = api.search(q=query, count=100)
+    tweets = api.search(q=query, lang='ja', result_type='recent' count=100)
     return tweets
 
 def likeTweets(tweets, keyword_id):
