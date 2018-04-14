@@ -27,10 +27,9 @@ api = tweepy.API(auth)
 DATABASE = "db/database.db"
 conn = sqlite3.connect(DATABASE)
 c = conn.cursor()
-create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY, query text, cron_tab text, is_enabled boolean)"
+create_query_db_sql = "CREATE TABLE IF NOT EXISTS query (id integer PRIMARY KEY, query text, cron_tab text, is_enabled integer default 0)"
 create_like_history_sql = "CREATE TABLE IF NOT EXISTS like_history (id integer PRIMARY KEY, query_id integer, created_at TIMESTAMP, user_id text, user_name text, tweet_id text, content text, is_follower int)"
 create_followers_sql = "CREATE TABLE IF NOT EXISTS followers (id integer PRIMARY KEY, created_at TIMESTAMP, followers_count integer)"
-
 c.execute(create_query_db_sql)
 c.execute(create_like_history_sql)
 c.execute(create_followers_sql)
@@ -45,8 +44,16 @@ app = Flask(__name__)
 def queryList():
     return render_template('queryList.html', queryList = getAllQuery())
 
-@app.route("/edit/<id>")
+@app.route("/edit/<id>", methods=['GET', 'POST'])
 def editQuery(id):
+    if request.method == 'POST':
+        crontab = request.values.get('crontab') # Your form's
+        isEnabled = request.values.get('is_enabled') # input names
+        print("isEnabled:{}".format(isEnabled))
+        isEnabled = 1 if isEnabled == "on" else 0 #ON = 1, OFF = 0
+        print("isEnabled:{}".format(isEnabled))
+        updateQuery(id, crontab, isEnabled)
+        return redirect("/index")
     res = selectQueryById(id)
     return render_template('editQuery.html', res = res)
 
@@ -114,6 +121,19 @@ def updateFollwers():
         print(e)
     return redirect('/you')
 
+@app.route('/dropDB')
+def dropDB():
+    try:
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        dropSQL = "DROP TABLE query;"
+        c.execute(dropSQL)
+        c.close()
+        print("[INFO] データベースを初期化しました")
+        return redirect("/")
+    except Exception as e:
+        print(e)
+    return redirect('/')
 
 @app.route('/', methods=['POST'])
 def getData():
@@ -168,6 +188,7 @@ def getData():
             headers={"Content-disposition":
                      "attachment; filename={}".format(csvName)})
 
+
 # SQL関係のメソッド
 def selectQueryById(queryId):
     conn = sqlite3.connect(DATABASE)
@@ -177,6 +198,17 @@ def selectQueryById(queryId):
     c.close()
     return res
 
+def updateQuery(id, crontab, isEnabled):
+    try:
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        updateSQL = "UPDATE query SET cron_tab = ?, is_enabled = ? WHERE id = ?"
+        c.execute(updateSQL, [crontab, isEnabled, id])
+        conn.commit()
+        c.close()
+        print("[INFO]キーワードを更新しました")
+    except Exception as e:
+        print("[ERROR]キーワードの更新に失敗しました: {}".format(e))
 
 def insertQuery(query, crontab):
     conn = sqlite3.connect(DATABASE)

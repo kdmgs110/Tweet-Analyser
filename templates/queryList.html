@@ -10,6 +10,8 @@
             <th>ID</th>
             <th>キーワード</th>
             <th>アクション</th>
+            <th>CRONTAB</th>
+            <th>稼働状況</th>
         </tr>
     </thead>
     <tbody>
@@ -19,8 +21,16 @@
             <td><a href="/show/{{row[0]}}">{{row[1]}}</a></td>
             <td>
               <a class="btn btn-info" href = "/like/{{ row[0] }}">いいねする</a>
-              <a class = "btn btn-success" href = "/show/{{ row[0] }}">いいね履歴を見る</a>
-              <a class = "btn btn-danger" href = "delete/{{ row[0] }}">キーワードを削除する</a>
+              <a class = "btn btn-success" href = "/edit/{{ row[0] }}">編集する</a>
+              <a class = "btn btn-danger" href = "/delete/{{ row[0] }}">削除する</a>
+            </td>
+            <td>{{row[2]}}</td>
+            <td>
+              {% if row[3] == 1 %}
+                <span class="btn btn-info">ON</span>
+              {% else %}
+                <span class="btn btn-danger">OFF</span>
+              {% endif %}
             </td>
         </tr>
         {% endfor %}
