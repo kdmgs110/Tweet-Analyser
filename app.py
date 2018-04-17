@@ -100,6 +100,7 @@ def like(id):
 
 @app.route('/delete/<id>/')
 def deleteQuery(id):
+    deleteCronTab(id)
     deleteQueryFromQueryId(id)
     return redirect("/index")
 
@@ -429,11 +430,14 @@ def disableCronTab(query, crontab):
         print("[INFO] 以下のJOBを無効化しました：{}".format(job))
 
 def deleteCronTab(id):
-    query = getQueryById(id)
+    query = selectQueryById(id)[1]
+    print("query:{}".format(query))
     cron = CronTab(user=True)
     jobs = cron.find_command(query)
     for job in jobs:
-        job.
+        cron.remove(job)
+        cron.write()
+        print("[INFO] 以下のJOBを削除しました:{}".format(query))
 
 if __name__ == '__main__':
     app.secret_key = SECRET_KEY
