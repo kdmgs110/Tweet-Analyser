@@ -6,6 +6,8 @@ from contextlib import closing    # ここはオフィシャルにはなかっ�
 import sqlite3
 from config import CONFIG
 import time
+import os
+from crontab import CronTab
 
 
 # 各種ツイッターのキーをセット
@@ -42,17 +44,24 @@ app = Flask(__name__)
 
 @app.route('/index')
 def queryList():
-    return render_template('queryList.html', queryList = getAllQuery())
+    cron = CronTab(user=True)
+    return render_template('queryList.html', queryList = getAllQuery(), cron = cron)
 
 @app.route("/edit/<id>", methods=['GET', 'POST'])
 def editQuery(id):
     if request.method == 'POST':
         crontab = request.values.get('crontab') # Your form's
         isEnabled = request.values.get('is_enabled') # input names
-        print("isEnabled:{}".format(isEnabled))
         isEnabled = 1 if isEnabled == "on" else 0 #ON = 1, OFF = 0
-        print("isEnabled:{}".format(isEnabled))
         updateQuery(id, crontab, isEnabled)
+        query = selectQueryById(id)[1]
+        print(query)
+        if isEnabled == 1:
+            print("[INFO] CRONの有効化設定が選ばれました。有効化します。")
+            enableCronTab(query, crontab)
+        else:
+            print("[INFO] CRONの無効化設定が選ばれました。無効化します。")
+            disableCronTab(query, crontab)
         return redirect("/index")
     res = selectQueryById(id)
     return render_template('editQuery.html', res = res)
@@ -100,6 +109,7 @@ def addQuery():
         query = request.form['query']
         cron = request.form['cron']
         insertQuery(query, cron)
+        addCronTab(query, cron)
         return redirect('/index')
     return render_template('addQuery.html')
 
@@ -388,6 +398,35 @@ def getFollowingsCount(user_id):
         return followingCount
     except Exception as e:
         print("[ERROR]フォロー数の取得に失敗しました。{}".format(e))
+
+#Crontabの関数群
+
+def addCronTab(query, crontab):
+    cron = CronTab(user=True)
+    cwd = os.getcwd()
+    job = cron.new(command = "python3 {}/autolike.py {}".format(cwd, query))
+    job.enable(False)
+    cron.write()
+    print("[INFO] crontabを新しく追加しました")
+
+def enableCronTab(query, crontab):
+    if crontab:
+        cron = CronTab(user=True)
+        jobs = cron.find_command(query)
+        for job in jobs:
+            print("[INFO] 以下のジョブがみつかりました:{}".format(job))
+            if not job.is_enabled():
+                job.enable()
+                cron.write()
+                print("[INFO] 以下のJOBを有効化しました：{}".format(job))
+
+def disableCronTab(query, crontab):
+    cron = CronTab(user=True)
+    jobs = cron.find_command(query)
+    for job in jobs:
+        job.enable(False)
+        cron.write()
+        print("[INFO] 以下のJOBを無効化しました：{}".format(job))
 
 if __name__ == '__main__':
     app.secret_key = SECRET_KEY
