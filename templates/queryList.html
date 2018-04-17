@@ -41,4 +41,20 @@
   <a class="btn btn-success" href="/addQuery">キーワードを追加する</a>
 </span>
 
+<h1>設定しているCrontab</h1>
+<table class="table">
+  <thead>
+      <tr>
+          <th>crontab</th>
+      </tr>
+  </thead>
+  <tbody>
+    {% for job in cron %}
+      <tr>
+        <td>{{job}}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
 {% endblock %}

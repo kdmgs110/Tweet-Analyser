@@ -428,6 +428,13 @@ def disableCronTab(query, crontab):
         cron.write()
         print("[INFO] 以下のJOBを無効化しました：{}".format(job))
 
+def deleteCronTab(id):
+    query = getQueryById(id)
+    cron = CronTab(user=True)
+    jobs = cron.find_command(query)
+    for job in jobs:
+        job.
+
 if __name__ == '__main__':
     app.secret_key = SECRET_KEY
     app.run(debug=True) # デバックしたときに、再ロードしなくても大丈夫になる
